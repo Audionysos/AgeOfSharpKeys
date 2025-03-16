@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Nullable>enable</Nullable>
+		<LangVersion>12</LangVersion>
+		<RootNamespace>aoe2.hotkeys</RootNamespace>
+  </PropertyGroup>
+
+</Project>
