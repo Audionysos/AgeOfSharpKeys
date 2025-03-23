@@ -16,7 +16,7 @@ namespace aoe2.hotkeys;
 /// <br/>
 /// <br/>There may be some other quirks for older game versions but I'm not really interested to implement support for the whole legacy.
 /// </summary>
-public class HotkeysProfile : IReadOnlyList<HotkeyData> {
+public class HotkeysProfile : IReadOnlyList<Hotkey> {
 	/// <summary>Name of the profile (taken from the <see cref="hki"/> file).
 	/// This should be the same name you see in game.</summary>
 	public string name { get; }
@@ -24,13 +24,13 @@ public class HotkeysProfile : IReadOnlyList<HotkeyData> {
 	/// In practice this would most likely be "%userprofile%\Games\Age of Empires 2 DE\{steamID}\profile\".</summary>
 	public string folder { get; }
 	/// <summary>Profile file contents</summary>
-	public HKP hki { get; }
+	public HotkeysFile hki { get; }
 	/// <summary>Base file contents.</summary>
-	public HKP hkp { get; }
+	public HotkeysFile hkp { get; }
 
 	/// <summary>Returns hotkey at given index from all loaded hotkeys.</summary>
-	public HotkeyData this[int index] => all[index];
-	private List<HotkeyData> all = [];
+	public Hotkey this[int index] => all[index];
+	private List<Hotkey> all = [];
 	public int Count => all.Count;
 
 	/// <summary>Loads profile files.</summary>
@@ -38,13 +38,19 @@ public class HotkeysProfile : IReadOnlyList<HotkeyData> {
 	/// <param name="baseFile">Path to <see cref="FileFormat.HKP"/> file.
 	/// This object will try to determine path to this file based on <paramref name="profileFile"/> path (the files may be placed directly in the same folder for sharing purposes).
 	/// You would only need to specify this parameter if you want to load the file form path unrelated to <paramref name="profileFile"/>.
-	/// Note however the file must be present. If the is no base file, the load will fail and exception will be thrown. If you want to load only a single file, use <see cref="HKP"/> class instead.</param>
+	/// Note however the file must be present. If the is no base file, the load will fail and exception will be thrown. If you want to load only a single file, use <see cref="HotkeysFile"/> class instead.</param>
 	public HotkeysProfile(string profileFile, string? baseFile = null) {
 		name = Path.GetFileNameWithoutExtension(profileFile);
 		folder = Path.GetDirectoryName(profileFile);
-		hki = new HKP(profileFile);
-		hkp = new HKP(getBasePath(baseFile));
+		hki = new HotkeysFile(profileFile);
+		hkp = new HotkeysFile(getBasePath(baseFile));
 		combineFiles();
+	}
+
+	/// <summary>Loads a single profile with given name, from user's profiles directory.</summary>
+	public static HotkeysProfile load(string name) {
+		var f = $@"{Hotkeys.userProfilesFolder}\{name}.hkp";
+		return new HotkeysProfile(f);
 	}
 
 	private void combineFiles() {
@@ -64,7 +70,7 @@ public class HotkeysProfile : IReadOnlyList<HotkeyData> {
 					OR, folder, "pompeii.hkp",
 					OR, folder, name + ".hki");//Old scheme? Should this swap paths?
 
-	public IEnumerator<HotkeyData> GetEnumerator() => all.GetEnumerator();
+	public IEnumerator<Hotkey> GetEnumerator() => all.GetEnumerator();
 	IEnumerator IEnumerable.GetEnumerator() => all.GetEnumerator();
 	public override string ToString() {
 		return $@"""{name}"" profile.";
