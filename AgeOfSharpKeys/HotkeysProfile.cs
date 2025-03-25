@@ -1,6 +1,6 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using static aoe2.hotkeys.PathPart;
 
@@ -53,10 +53,55 @@ public class HotkeysProfile : IReadOnlyList<Hotkey> {
 		return new HotkeysProfile(f);
 	}
 
+	/// <summary>Creates copy of given profile in the same <see cref="folder"/>.
+	/// Note: New profile will have recent files structure (name.hkp and name/base.hkp), even if original files from the <paramref name="source"/> profile have different relative paths.
+	/// Note2: The file are not written to file system until you call <see cref="save(bool)"/>.</summary>
+	/// <param name="source">Profile to be copied.</param>
+	/// <param name="name">Name for new profile.</param>
+	/// <param name="over">Allows override existing profile files.</param>
+	/// <param name="folder">Changes the <see cref="folder"/> where the profile is installed.</param>
+	public HotkeysProfile(HotkeysProfile source, string name, bool over = false, string? folder = null) {
+		this.name = name;
+		this.folder = folder ?? source.folder;
+		var lfn = $@"{this.folder}\{name}"; //local folder name
+		Directory.CreateDirectory(lfn);
+		hki = new HotkeysFile(source.hki, $@"{lfn}.hkp", over);
+		hkp = new HotkeysFile(source.hkp, $@"{lfn}\Base.hkp", over);
+		combineFiles();
+	}
+
+	#region Saving
+	/// <summary>Saves all current changes made to this profile.
+	/// Returns exceptions from <see cref="HotkeysFile.save(bool)"/> methods.</summary>
+	/// <param name="force">Allows write the files even if they were edited by external applications.</param>
+	public Exception? save(bool force = false) {
+		var e = hki.save(force);
+		if (e != null) return e;
+		return hkp.save();
+	}
+
+	/// <summary>Saves copy of this profile with different name under the same profiles <see cref="folder"/>.</summary>
+	/// <param name="name">The name should be unique, or existing profile files will be overridden.</param>
+	/// <param name="over">Allows to override other existing profile, otherwise exceptions will be thrown (no returned).</param>
+	public Exception? save(string name, bool over = false) {
+		var cpy = new HotkeysProfile(this, name, over);
+		return cpy.save();
+	}
+
+	/// <summary>Saves copy of this profile with different name under given folder <see cref="folder"/>.</summary>
+	/// <param name="name">The name should be unique to <see cref="folder"/>, or existing profile files will be overridden.</param>
+	/// <param name="over">Allows to override other existing profile, otherwise exceptions will be thrown (no returned).</param>
+	public Exception? save(string name, string folder, bool over = false) {
+		if (folder == "") folder = Environment.CurrentDirectory;
+		var cpy = new HotkeysProfile(this, name, over, folder);
+		return cpy.save();
+	}
+	#endregion
+
 	private void combineFiles() {
 		foreach (var h in hkp.hotkeys) all.Add(h);
 		foreach (var h in hki.hotkeys) {
-			//if (all.Any(o => o.nameID == h.nameID))
+			//if (all.Any(o => o.nameID == h.nameI
 			//	Debugger.Break();
 			all.Add(h);
 		}

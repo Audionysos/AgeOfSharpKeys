@@ -51,8 +51,9 @@ public class HotkeysFile : IDisposable {
 	}
 
 	/// <summary>Create in-memory copy of given hotkeys file that can be later saved to a given file.</summary>
-	public HotkeysFile(HotkeysFile source, string file) {
+	public HotkeysFile(HotkeysFile source, string file, bool over = false) {
 		this.file = file;
+		if (!over && File.Exists(file)) throw new IOException($@"Target file for hotkeys already exist ""{file}""");
 		format = source.format;
 		version = source.version;
 		stream = new MemoryStream();
@@ -90,6 +91,8 @@ public class HotkeysFile : IDisposable {
 		}
 	}
 
+	/// <summary>Don't use this! it will be removed...</summary>
+	/// <param name="h"></param>
 	public void write(Hotkey h) {
 		str.write(h.data, h.position);
 	}
@@ -141,7 +144,9 @@ public class Hotkey {
 	public BOOL ctrl { get => _data.ctrl; set { _data.ctrl = value; write(); }	}
 	public BOOL alt { get => _data.alt; set { _data.alt = value; write();}}
 	public BOOL shift { get => _data.shift; set { _data.shift = value; write();}}
+	public string name { get => _data.name; }
 
+	/// <summary>Don't use this - this is for <see cref="HotkeysFile"/> only.</summary>
 	public Hotkey(HotkeysFile file, HotkeyData data, long position) {
 		this.file = file;
 		this._data = data;
@@ -178,7 +183,7 @@ public struct HotkeyData {
 	public BOOL alt;
 	public BOOL shift;
 	public byte alignmentMaybe;
-	public string? name => Names.get(nameID);
+	public string name => Names.get(nameID) ?? "";
 
 	public override string ToString() {
 		return $@"{name}: {printMod()}{key}";
