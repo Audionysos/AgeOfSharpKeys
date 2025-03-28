@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using static aoe2.hotkeys.PathPart;
 
 namespace aoe2.hotkeys;
@@ -23,9 +24,9 @@ public class HotkeysProfile : IReadOnlyList<Hotkey> {
 	/// <summary>Direct parent folder for the profile path.
 	/// In practice this would most likely be "%userprofile%\Games\Age of Empires 2 DE\{steamID}\profile\".</summary>
 	public string folder { get; }
-	/// <summary>Profile file contents</summary>
+	/// <summary>Profile file contents (profileName.hkp)</summary>
 	public HotkeysFile hki { get; }
-	/// <summary>Base file contents.</summary>
+	/// <summary>Base file contents (profileName/Base.hkp).</summary>
 	public HotkeysFile hkp { get; }
 
 	/// <summary>Returns hotkey at given index from all loaded hotkeys.</summary>
@@ -49,7 +50,7 @@ public class HotkeysProfile : IReadOnlyList<Hotkey> {
 
 	/// <summary>Loads a single profile with given name, from user's profiles directory.</summary>
 	public static HotkeysProfile load(string name) {
-		var f = $@"{Hotkeys.userProfilesFolder}\{name}.hkp";
+		var f = $@"{AOE2Paths.userProfilesFolder}\{name}.hkp";
 		return new HotkeysProfile(f);
 	}
 
@@ -77,7 +78,17 @@ public class HotkeysProfile : IReadOnlyList<Hotkey> {
 	public Exception? save(bool force = false) {
 		var e = hki.save(force);
 		if (e != null) return e;
-		return hkp.save();
+		e = hkp.save();
+		if (e != null) return e;
+
+		if (!AOE2Paths.isGameFile(hki.file)) return null;
+		var rd = AOE2Paths.remoteDir;
+		if (rd == null) return new Exception("Remove AoE2 profiles directory not found");
+		File.Copy(hki.file, Path.Combine(rd, hki.fileName), true);
+		var bd = Path.Combine(rd, name);
+		Directory.CreateDirectory(bd);
+		File.Copy(hkp.file, Path.Combine(bd, hkp.fileName), true);
+		return null;
 	}
 
 	/// <summary>Saves copy of this profile with different name under the same profiles <see cref="folder"/>.</summary>
@@ -96,7 +107,28 @@ public class HotkeysProfile : IReadOnlyList<Hotkey> {
 		var cpy = new HotkeysProfile(this, name, over, folder);
 		return cpy.save();
 	}
+
+	/// <summary>Exports the profile files into .zip package.
+	/// This operation implicitly saves original profile with all the changes made since it's load.</summary>
+	/// <param name="file">Path to output .zip file.</param>
+	/// <param name="flatten">Tells if all files should be put directly inside the package ("base.hkp" instead of "myProfile\base.hkp").</param>
+	public Exception? export(string file, bool flatten = false, bool over = false) {
+		var e = save(); if (e != null) return e;
+		if (Directory.Exists(file)) file = Path.Combine(file, name + ".zip");
+		if (!file.EndsWith(".zip")) file += ".zip";
+		if (File.Exists(file)) {
+			if(!over) return new IOException($@"File already exist ""{file}"".");
+			File.Delete(file);
+		}
+		using var zip = ZipFile.Open(file, ZipArchiveMode.Update);
+		var baseFile = Path.GetFileName(hkp.file);
+		var baseFolder = flatten ? "" : name + "\\";
+		zip.CreateEntryFromFile(hki.file, name + ".hkp");
+		zip.CreateEntryFromFile(hkp.file, baseFolder + baseFile);
+		return null;
+	}
 	#endregion
+
 
 	private void combineFiles() {
 		foreach (var h in hkp.hotkeys) all.Add(h);

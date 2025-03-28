@@ -17,6 +17,8 @@ public class HotkeysFile : IDisposable {
 
 	/// <summary>Path to file that was read.</summary>
 	public string file { get; }
+	/// <summary>Returns <see cref="Path.GetFileName(string)"/>.</summary>
+	public string fileName => Path.GetFileName(file);
 	/// <summary>Older/newer version of file. The only difference in data structure is that the never formant adds 3 additional hotkeys groups in the middle of the header.
 	/// If anyone knows why they did this instead of increasing the count and adding the groups at the end of the file, please let me know.</summary>
 	public FileFormat format { get; private set; }

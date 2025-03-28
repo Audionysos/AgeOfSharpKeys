@@ -6,8 +6,8 @@ namespace AgeKeys;
 
 class ReadingExample {
 	public ReadingExample() {
-		var pd = Hotkeys.userProfilesFolder
-			?? throw new Exception(Hotkeys.userProfilesIssue?.ToString());
+		var pd = AOE2Paths.userProfilesFolder
+			?? throw new Exception(AOE2Paths.userProfilesIssue?.ToString());
 		var hotkeys = new Hotkeys(); //AoE installation needed, otherwise `new Hotkeys(customFolder)`
 
 		WriteLine($@"Loaded {hotkeys.profiles.Count} profiles.");
