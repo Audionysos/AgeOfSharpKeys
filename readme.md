@@ -84,7 +84,7 @@ foreach (var h in sel) {
 p.save();
 ```
 
-> **Important:** Currently, after the game first detects a new profile in your users directory it will load it to it's servers and override any changes you made locally outside the game with the initial version of the hotkeys profile. To edit a profile that is already loaded by the game you need create another clone and delete the old one (using game's interface).
+> **Important:** Currently when editing a profile you need to first close the game, save it, then selected "Local copy" in Steam popup. 
 
 #### Known Issues
 
